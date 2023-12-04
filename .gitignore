@@ -1,1 +1,8 @@
+#Editor specific
+/.idea
+
+#Rust
 /target
+
+#App specific
+Conf.toml
