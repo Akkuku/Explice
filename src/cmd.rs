@@ -14,7 +14,11 @@ pub(crate) enum Command {
     Init { apikey: String },
     #[command(arg_required_else_help = true)]
     #[command(about = "Create chat completion", long_about = None)]
-    Chat { prompt: String },
+    Chat {
+        #[arg(long, short)]
+        assistant: String,
+        prompt: String,
+    },
     #[command(subcommand)]
     Assistant(AssistantCommand),
 }
@@ -22,7 +26,7 @@ pub(crate) enum Command {
 pub(crate) async fn match_cmd(command: Command) -> anyhow::Result<()> {
     match command {
         Command::Init { apikey } => init_cmd(apikey)?,
-        Command::Chat { prompt } => chat_cmd(prompt).await?,
+        Command::Chat { prompt, assistant } => chat_cmd(prompt, assistant).await?,
         Command::Assistant(command) => match_assistant_cmd(command)?,
     }
     Ok(())

@@ -8,7 +8,7 @@ use clap::Subcommand;
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum AssistantCommand {
-    #[command(about = "List all assistants", long_about = None)]
+    #[command(about = "List all assistant names", long_about = None)]
     List,
     #[command(about = "Add assistant", long_about = None)]
     Add(ChatAssistant),

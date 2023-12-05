@@ -10,18 +10,16 @@ pub(crate) struct ChatAssistants {
     assistants: Vec<ChatAssistant>,
 }
 
-impl Default for ChatAssistant {
-    fn default() -> Self {
-        ChatAssistant {
-            name: String::from(""),
-            model: String::from("gpt-3.5-turbo"),
-            description: String::from(""),
-            system: String::from("You are a helpful assistant"),
-        }
+impl ChatAssistant {
+    pub fn model(&self) -> &String {
+        &self.model
+    }
+    pub fn system(&self) -> &String {
+        &self.system
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, clap::Args)]
+#[derive(Debug, Serialize, Deserialize, Clone, clap::Args)]
 pub(crate) struct ChatAssistant {
     #[arg(long, short)]
     name: String,
@@ -52,6 +50,11 @@ impl ChatAssistants {
         Ok(assistants)
     }
 
+    pub(crate) fn assistant(assistant_name: String) -> Result<Option<ChatAssistant>> {
+        let assistants = ChatAssistants::read()?;
+        Ok(assistants.get(assistant_name))
+    }
+
     pub(crate) fn save(&self) -> Result<()> {
         let json = serde_json::to_string(&self).unwrap();
         fs::write(ASSISTANTS_PATH, json)?;
@@ -66,16 +69,17 @@ impl ChatAssistants {
         Ok(())
     }
 
-    pub(crate) fn get(&self, assistant_name: String) -> Option<&ChatAssistant> {
-        self.assistants
-            .iter()
-            .find(|assistant| assistant.name == assistant_name)
-    }
-
     pub(crate) fn names(&self) -> Vec<String> {
         self.assistants
             .iter()
             .map(|assistant| assistant.name.to_owned())
             .collect()
+    }
+
+    fn get(&self, assistant_name: String) -> Option<ChatAssistant> {
+        self.assistants
+            .iter()
+            .find(|assistant| assistant.name == assistant_name)
+            .cloned()
     }
 }
