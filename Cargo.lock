@@ -401,6 +401,7 @@ dependencies = [
  "clap",
  "dialoguer",
  "serde",
+ "serde_json",
  "tokio",
  "toml",
 ]
