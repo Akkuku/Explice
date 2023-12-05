@@ -1,7 +1,9 @@
 mod cmd;
+mod persistence;
+mod use_case;
 
 use crate::cmd::{match_commands, Commands};
-use clap::{Parser, Subcommand};
+use clap::Parser;
 
 #[derive(Debug, Parser)]
 #[command(name = "explice")]
@@ -12,7 +14,7 @@ struct Cli {
 }
 
 #[tokio::main]
-fn main() {
+async fn main() {
     let args = Cli::parse();
-    match_commands(args);
+    match_commands(args).await;
 }
