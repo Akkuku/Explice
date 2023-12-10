@@ -8,26 +8,27 @@ use crate::cmd::init::init_cmd;
 use clap::Subcommand;
 
 #[derive(Debug, Subcommand)]
-pub(crate) enum Command {
+pub enum Command {
     #[command(arg_required_else_help = true)]
-    #[command(about = "Initialize in directory", long_about = None)]
+    #[command(about = "Initialize in directory")]
     Init { apikey: String },
     #[command(arg_required_else_help = true)]
-    #[command(about = "Create chat completion", long_about = None)]
+    #[command(about = "Create chat completion")]
     Chat {
         #[arg(long, short)]
         assistant: String,
-        prompt: String,
+        #[arg(num_args(1..))]
+        prompt: Vec<String>,
     },
     #[command(subcommand)]
     Assistant(AssistantCommand),
 }
 
-pub(crate) async fn match_cmd(command: Command) -> anyhow::Result<()> {
+pub async fn match_cmd(command: Command) -> anyhow::Result<()> {
     match command {
-        Command::Init { apikey } => init_cmd(apikey)?,
-        Command::Chat { prompt, assistant } => chat_cmd(prompt, assistant).await?,
-        Command::Assistant(command) => match_assistant_cmd(command)?,
+        Command::Init { apikey } => init_cmd(&apikey)?,
+        Command::Chat { prompt, assistant } => chat_cmd(prompt, &assistant).await?,
+        Command::Assistant(command) => match_assistant_cmd(command).await?,
     }
     Ok(())
 }

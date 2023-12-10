@@ -1,9 +1,5 @@
-#Editor specific
+#Editor
 /.idea
 
 #Rust
-/target
-
-#App specific
-Conf.toml
-assistants.json
+**/target

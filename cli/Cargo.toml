@@ -1,0 +1,11 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lib = { path= "../lib" }
+clap = { version = "4.4.11", features = ["derive"] }
+anyhow = { version = "1.0.75", features = [] }
+dialoguer = "0.11.0"
+tokio = { version = "1.34.0", features = ["rt", "net", "rt-multi-thread", "macros"] }

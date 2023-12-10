@@ -1,13 +1,12 @@
 mod cmd;
-mod persistence;
-mod use_case;
+mod dialog;
 
 use crate::cmd::{match_cmd, Command};
 use clap::Parser;
+use lib::APP_NAME;
 
 #[derive(Debug, Parser)]
-#[command(name = "explice")]
-#[command(about = "Easy AI files workflow", long_about = None)]
+#[command(name = APP_NAME, about = "Easy AI files workflow")]
 struct Cli {
     #[command(subcommand)]
     command: Command,
