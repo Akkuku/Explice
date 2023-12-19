@@ -7,7 +7,7 @@ pub async fn assistant_add_cmd(mut cli_assistant: Assistant) -> anyhow::Result<(
 
     if cli_assistant.model.is_none() {
         let models = get_available_chat_models(config.apikey()).await?;
-        let model = select_model(models).await?;
+        let model = select_model(models)?;
         cli_assistant.model = Some(model);
     }
 

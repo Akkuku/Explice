@@ -12,13 +12,10 @@ pub enum Command {
     #[command(arg_required_else_help = true)]
     #[command(about = "Initialize in directory")]
     Init { apikey: String },
-    #[command(arg_required_else_help = true)]
     #[command(about = "Create chat completion")]
     Chat {
         #[arg(long, short)]
-        assistant: String,
-        #[arg(num_args(1..))]
-        prompt: Vec<String>,
+        assistant: Option<String>,
     },
     #[command(subcommand)]
     Assistant(AssistantCommand),
@@ -27,7 +24,7 @@ pub enum Command {
 pub async fn match_cmd(command: Command) -> anyhow::Result<()> {
     match command {
         Command::Init { apikey } => init_cmd(&apikey)?,
-        Command::Chat { prompt, assistant } => chat_cmd(prompt, &assistant).await?,
+        Command::Chat { assistant } => chat_cmd(assistant.as_deref()).await?,
         Command::Assistant(command) => match_assistant_cmd(command).await?,
     }
     Ok(())

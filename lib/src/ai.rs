@@ -2,6 +2,7 @@ use crate::assistant::ChatAssistant;
 use anyhow::Result;
 use async_openai::config::OpenAIConfig;
 use async_openai::types::{
+    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
     ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs,
     CreateChatCompletionRequestArgs,
 };
@@ -9,24 +10,15 @@ use async_openai::Client;
 
 pub async fn create_chat_completion(
     apikey: &str,
-    prompt: &str,
     assistant: &ChatAssistant,
+    messages: Vec<ChatCompletionRequestMessage>,
 ) -> Result<String> {
     let open_ai_config = OpenAIConfig::new().with_api_key(apikey);
     let client = Client::with_config(open_ai_config);
 
     let request = CreateChatCompletionRequestArgs::default()
         .model(assistant.model())
-        .messages([
-            ChatCompletionRequestSystemMessageArgs::default()
-                .content(assistant.system())
-                .build()?
-                .into(),
-            ChatCompletionRequestUserMessageArgs::default()
-                .content(prompt)
-                .build()?
-                .into(),
-        ])
+        .messages(messages)
         .max_tokens(40u16)
         .build()?;
 
@@ -68,6 +60,45 @@ async fn get_available_models(apikey: &str) -> Result<Vec<String>> {
         .collect();
 
     Ok(models)
+}
+
+pub struct ChatMessageBuilder {
+    messages: Vec<ChatCompletionRequestMessage>,
+}
+
+impl ChatMessageBuilder {
+    pub fn new(system_message: &str) -> Result<Self> {
+        Ok(Self {
+            messages: vec![ChatCompletionRequestSystemMessageArgs::default()
+                .content(system_message)
+                .build()?
+                .into()],
+        })
+    }
+
+    pub fn add_user(&mut self, prompt: &str) -> Result<&mut Self> {
+        self.messages.push(
+            ChatCompletionRequestUserMessageArgs::default()
+                .content(prompt)
+                .build()?
+                .into(),
+        );
+        Ok(self)
+    }
+
+    pub fn add_assistant(&mut self, completion: &str) -> Result<&mut Self> {
+        self.messages.push(
+            ChatCompletionRequestAssistantMessageArgs::default()
+                .content(completion)
+                .build()?
+                .into(),
+        );
+        Ok(self)
+    }
+
+    pub fn build(&self) -> &Vec<ChatCompletionRequestMessage> {
+        &self.messages
+    }
 }
 
 #[cfg(test)]
