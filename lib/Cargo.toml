@@ -11,3 +11,5 @@ toml = { version = "0.8.8", features = [] }
 dirs = "5.0.1"
 async-openai = "0.17.1"
 tokio = { version = "1.35.0", features = ["macros", "rt-multi-thread"] }
+regex = { version = "1.10.2", features = [] }
+itertools = "0.12.0"

@@ -1,6 +1,8 @@
 use crate::dialog::{chat_prompt, select_assistant};
 use anyhow::Result;
-use lib::{create_chat_completion, ChatAssistant, ChatMessageBuilder, ExpliceConfig, Persist};
+use lib::{
+    create_chat_completion, parse_prompt, ChatAssistant, ChatMessageBuilder, ExpliceConfig, Persist,
+};
 
 pub async fn chat_cmd(assistant_name: Option<&str>) -> Result<()> {
     let config = ExpliceConfig::read()?;
@@ -22,7 +24,7 @@ pub async fn create_chat_loop(apikey: &str, assistant: &ChatAssistant) -> Result
             None => {
                 break;
             }
-            Some(prompt) => prompt,
+            Some(prompt) => parse_prompt(prompt)?,
         };
         message_builder.add_user(&prompt)?;
         let completion =

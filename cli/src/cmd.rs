@@ -10,7 +10,7 @@ use clap::Subcommand;
 #[derive(Debug, Subcommand)]
 pub enum Command {
     #[command(arg_required_else_help = true)]
-    #[command(about = "Initialize in directory")]
+    #[command(about = "Initialize config file")]
     Init { apikey: String },
     #[command(about = "Create chat completion")]
     Chat {
