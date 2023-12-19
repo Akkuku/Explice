@@ -12,7 +12,8 @@ struct Cli {
     command: Command,
 }
 
-pub async fn init() {
+#[tokio::main]
+pub async fn main() {
     let args = Cli::parse();
     if let Err(err) = match_cmd(args.command).await {
         eprintln!("{err}")

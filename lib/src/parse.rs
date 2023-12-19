@@ -63,11 +63,14 @@ mod tests {
 
     #[test]
     fn test_get_placeholders() -> Result<()> {
-        let placeholders = get_placeholders("some { placeholder } or {another} also {file.ext }")?;
+        let placeholders = get_placeholders(
+            "some { placeholder } or {another} also {file.ext } or { file name.ext}",
+        )?;
 
         assert_eq!(placeholders[0], "placeholder");
         assert_eq!(placeholders[1], "another");
         assert_eq!(placeholders[2], "file.ext");
+        assert_eq!(placeholders[3], "file name.ext");
 
         assert!(get_placeholders("some {     } or {}")?.is_empty());
 

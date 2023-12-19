@@ -1,4 +1,5 @@
 use crate::assistant::ChatAssistant;
+use crate::ExpliceConfig;
 use anyhow::Result;
 use async_openai::config::OpenAIConfig;
 use async_openai::types::{
@@ -10,6 +11,7 @@ use async_openai::Client;
 
 pub async fn create_chat_completion(
     apikey: &str,
+    token_limit: &u16,
     assistant: &ChatAssistant,
     messages: Vec<ChatCompletionRequestMessage>,
 ) -> Result<String> {
@@ -19,7 +21,7 @@ pub async fn create_chat_completion(
     let request = CreateChatCompletionRequestArgs::default()
         .model(assistant.model())
         .messages(messages)
-        .max_tokens(40u16)
+        .max_tokens(*token_limit)
         .build()?;
 
     let response = client.chat().create(request).await?;
@@ -62,7 +64,38 @@ async fn get_available_models(apikey: &str) -> Result<Vec<String>> {
     Ok(models)
 }
 
-pub struct ChatMessageBuilder {
+pub async fn create_chat_loop<F>(
+    config: &ExpliceConfig,
+    assistant: &ChatAssistant,
+    create_prompt: F,
+) -> Result<()>
+where
+    F: Fn() -> Result<Option<String>>,
+{
+    println!("Enter your prompt below. Leave it blank to exit");
+
+    let mut message_builder = ChatMessageBuilder::new(assistant.system())?;
+    loop {
+        let Some(prompt) = create_prompt()? else {
+            break;
+        };
+        message_builder.add_user(&prompt)?;
+        let completion = create_chat_completion(
+            config.apikey(),
+            config.token_limit(),
+            assistant,
+            message_builder.build().to_vec(),
+        )
+        .await?;
+        message_builder.add_assistant(&completion)?;
+
+        println!("{completion}");
+    }
+
+    Ok(())
+}
+
+struct ChatMessageBuilder {
     messages: Vec<ChatCompletionRequestMessage>,
 }
 

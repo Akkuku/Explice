@@ -2,7 +2,7 @@ use crate::cmd::assistant::Assistant;
 use crate::dialog::select_model;
 use lib::{get_available_chat_models, AssistantData, ExpliceConfig, Persist};
 
-pub async fn assistant_add_cmd(mut cli_assistant: Assistant) -> anyhow::Result<()> {
+pub(crate) async fn assistant_add_cmd(mut cli_assistant: Assistant) -> anyhow::Result<()> {
     let mut config = ExpliceConfig::read()?;
 
     if cli_assistant.model.is_none() {

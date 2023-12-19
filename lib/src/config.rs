@@ -9,6 +9,7 @@ const CONFIG_FILE_NAME: &str = "config.json";
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ExpliceConfig {
     apikey: String,
+    token_limit: u16,
     #[serde(flatten)]
     assistants: ChatAssistants,
 }
@@ -28,15 +29,31 @@ impl ExpliceConfig {
         Ok(exists)
     }
 
-    pub fn new(apikey: &str) -> Self {
+    pub fn new(apikey: &str, token_limit: &u16) -> Self {
         ExpliceConfig {
             apikey: apikey.to_string(),
+            token_limit: token_limit.to_owned(),
             assistants: Default::default(),
         }
     }
 
+    pub fn update(&mut self, apikey: Option<&str>, token_limit: Option<u16>) -> &mut Self {
+        if let Some(apikey) = apikey {
+            self.apikey = apikey.to_owned();
+        };
+        if let Some(token_limit) = token_limit {
+            self.token_limit = token_limit.to_owned();
+        };
+
+        self
+    }
+
     pub fn apikey(&self) -> &str {
         &self.apikey
+    }
+
+    pub fn token_limit(&self) -> &u16 {
+        &self.token_limit
     }
 
     pub fn push_assistant(&mut self, assistant: ChatAssistant) -> Result<&Self> {

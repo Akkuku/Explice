@@ -26,7 +26,7 @@ pub struct Assistant {
     system: String,
 }
 
-pub async fn match_assistant_cmd(command: AssistantCommand) -> anyhow::Result<()> {
+pub(crate) async fn match_assistant_cmd(command: AssistantCommand) -> anyhow::Result<()> {
     match command {
         AssistantCommand::List => assistant_list_cmd()?,
         AssistantCommand::Add(assistant) => assistant_add_cmd(assistant).await?,
