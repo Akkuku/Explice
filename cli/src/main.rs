@@ -6,7 +6,7 @@ use clap::Parser;
 use lib::APP_NAME;
 
 #[derive(Debug, Parser)]
-#[command(name = APP_NAME, about = "Easy AI files workflow")]
+#[command(name = APP_NAME, about = "Command line AI assistant")]
 struct Cli {
     #[command(subcommand)]
     command: Command,

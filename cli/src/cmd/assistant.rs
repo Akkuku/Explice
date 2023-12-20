@@ -3,7 +3,7 @@ mod list;
 
 use crate::cmd::assistant::add::assistant_add_cmd;
 use crate::cmd::assistant::list::assistant_list_cmd;
-use clap::Subcommand;
+use clap::{Args, Subcommand};
 use lib::AssistantData;
 
 #[derive(Debug, Subcommand)]
@@ -14,7 +14,7 @@ pub enum AssistantCommand {
     Add(Assistant),
 }
 
-#[derive(Debug, clap::Args)]
+#[derive(Debug, Args)]
 pub struct Assistant {
     #[arg(long, short)]
     name: String,

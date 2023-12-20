@@ -31,7 +31,7 @@ impl ExpliceConfig {
 
     pub fn new(apikey: &str, token_limit: &u16) -> Self {
         ExpliceConfig {
-            apikey: apikey.to_string(),
+            apikey: apikey.to_owned(),
             token_limit: token_limit.to_owned(),
             assistants: Default::default(),
         }

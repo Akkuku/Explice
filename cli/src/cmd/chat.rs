@@ -1,6 +1,6 @@
 use crate::dialog::{chat_prompt, select_assistant};
 use anyhow::Result;
-use lib::{create_chat_loop, parse_prompt, ExpliceConfig, Persist};
+use lib::{create_chat_loop, replace_placeholders, ExpliceConfig, Persist};
 
 pub(crate) async fn chat_cmd(assistant_name: Option<&str>) -> Result<()> {
     let config = ExpliceConfig::read()?;
@@ -12,7 +12,7 @@ pub(crate) async fn chat_cmd(assistant_name: Option<&str>) -> Result<()> {
 
     let create_prompt = || match chat_prompt()? {
         None => Ok(None),
-        Some(prompt) => Ok(Some(parse_prompt(prompt)?)),
+        Some(prompt) => Ok(Some(replace_placeholders(prompt)?)),
     };
 
     create_chat_loop(&config, assistant, create_prompt).await?;
