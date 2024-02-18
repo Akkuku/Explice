@@ -19,4 +19,4 @@ explice chat
     `: explain this code: {main.py}?`  
     `: how to use this function: {TryYourself.cs 21:37}?`  
     `: extend this docker compose with postgres service: {home/usr/my_project/docker-compose.yml}`
-- [x] Path completion on arrow right click
+- [x] Path completion on tab or right arrow click
