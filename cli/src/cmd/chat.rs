@@ -1,21 +1,23 @@
-use crate::dialog::{chat_prompt, select_assistant};
+use crate::dialog::{input_chat_prompt, select_assistant};
 use anyhow::Result;
-use lib::{create_chat_loop, replace_placeholders, ExpliceConfig, Persist};
+use clap::Args;
+use lib::{create_chat_loop, ExpliceConfig};
 
-pub(crate) async fn chat_cmd(assistant_name: Option<&str>) -> Result<()> {
+#[derive(Debug, Args)]
+pub struct ChatArgs {
+    #[arg(long = "assistant", short)]
+    assistant_name: Option<String>,
+}
+
+pub(crate) async fn chat_cmd(args: ChatArgs) -> Result<()> {
     let config = ExpliceConfig::read()?;
 
-    let assistant = match assistant_name {
+    let assistant = match args.assistant_name {
         None => select_assistant(&config)?,
-        Some(assistant_name) => config.assistants().get_by_name(assistant_name)?,
+        Some(assistant_name) => config.assistants().get_by_name(&assistant_name)?,
     };
 
-    let create_prompt = || match chat_prompt()? {
-        None => Ok(None),
-        Some(prompt) => Ok(Some(replace_placeholders(prompt)?)),
-    };
-
-    create_chat_loop(&config, assistant, create_prompt).await?;
+    create_chat_loop(&config, assistant, input_chat_prompt).await?;
 
     Ok(())
 }

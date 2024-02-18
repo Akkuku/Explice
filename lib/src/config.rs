@@ -1,8 +1,6 @@
-use crate::{ChatAssistant, ChatAssistants, Persist, APP_NAME};
-use anyhow::{bail, Context, Result};
+use crate::{ChatAssistant, ChatAssistants, PersistConfig};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::PathBuf;
 
 const CONFIG_FILE_NAME: &str = "config.json";
 
@@ -15,20 +13,6 @@ pub struct ExpliceConfig {
 }
 
 impl ExpliceConfig {
-    fn path() -> Result<PathBuf> {
-        let file_path = dirs::config_dir()
-            .context("could not find config directory for your system")?
-            .join(APP_NAME)
-            .join(CONFIG_FILE_NAME);
-
-        Ok(file_path)
-    }
-
-    pub fn exists() -> Result<bool> {
-        let exists = Self::path()?.try_exists()?;
-        Ok(exists)
-    }
-
     pub fn new(apikey: &str, token_limit: &u16) -> Self {
         ExpliceConfig {
             apikey: apikey.to_owned(),
@@ -64,34 +48,16 @@ impl ExpliceConfig {
     pub fn assistants(&self) -> &ChatAssistants {
         &self.assistants
     }
-}
 
-impl Persist for ExpliceConfig {
-    fn read() -> Result<Self> {
-        let path = Self::path()?;
-        if !path.try_exists()? {
-            bail!(
-                "Config not found, run {} init first",
-                APP_NAME.to_lowercase()
-            )
-        }
-
-        let content = fs::read_to_string(path)?;
-        let config = serde_json::from_str(content.as_str())?;
-
-        Ok(config)
+    pub fn read() -> Result<Self> {
+        PersistConfig::read(CONFIG_FILE_NAME)
     }
 
-    fn save(&self) -> Result<()> {
-        let path = Self::path()?;
-        let dir = path.parent().unwrap();
-        if !dir.try_exists()? {
-            fs::create_dir_all(dir)?;
-        }
+    pub fn save(&self) -> Result<()> {
+        PersistConfig::save(CONFIG_FILE_NAME, &self)
+    }
 
-        let json = serde_json::to_string_pretty(&self)?;
-        fs::write(path, json)?;
-
-        Ok(())
+    pub fn exists() -> Result<bool> {
+        PersistConfig::exists(CONFIG_FILE_NAME)
     }
 }

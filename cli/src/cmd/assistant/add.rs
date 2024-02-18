@@ -1,18 +1,41 @@
-use crate::cmd::assistant::Assistant;
 use crate::dialog::select_model;
-use lib::{get_available_chat_models, AssistantData, ExpliceConfig, Persist};
+use clap::Args;
+use lib::{get_available_chat_models, AssistantData, ExpliceConfig};
 
-pub(crate) async fn assistant_add_cmd(mut cli_assistant: Assistant) -> anyhow::Result<()> {
+#[derive(Debug, Args)]
+pub struct AddAssistantArgs {
+    #[arg(long, short)]
+    name: String,
+    #[arg(long, short)]
+    model: Option<String>,
+    #[arg(long, short, default_value = "")]
+    description: String,
+    #[arg(long, short, default_value = "You are a helpful assistant")]
+    system: String,
+}
+
+impl From<AddAssistantArgs> for AssistantData {
+    fn from(assistant: AddAssistantArgs) -> Self {
+        Self {
+            name: assistant.name,
+            model: assistant.model.unwrap(),
+            description: assistant.description,
+            system: assistant.system,
+        }
+    }
+}
+
+pub(crate) async fn assistant_add_cmd(mut args: AddAssistantArgs) -> anyhow::Result<()> {
     let mut config = ExpliceConfig::read()?;
 
-    if cli_assistant.model.is_none() {
+    if args.model.is_none() {
         let models = get_available_chat_models(config.apikey()).await?;
         let model = select_model(models)?;
-        cli_assistant.model = Some(model);
+        args.model = Some(model);
     }
 
     config
-        .push_assistant(AssistantData::from(cli_assistant).into())?
+        .push_assistant(AssistantData::from(args).into())?
         .save()?;
 
     println!("Successfully added assistant");

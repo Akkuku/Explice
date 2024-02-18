@@ -1,5 +1,5 @@
 use crate::assistant::ChatAssistant;
-use crate::ExpliceConfig;
+use crate::{replace_placeholders, ExpliceConfig};
 use anyhow::Result;
 use async_openai::config::OpenAIConfig;
 use async_openai::types::{
@@ -76,9 +76,11 @@ where
 
     let mut message_builder = ChatMessageBuilder::new(assistant.system())?;
     loop {
-        let Some(prompt) = create_prompt()? else {
-            break;
+        let prompt = match create_prompt()? {
+            None => break,
+            Some(prompt) => replace_placeholders(prompt)?,
         };
+
         message_builder.add_user(&prompt)?;
         let completion = create_chat_completion(
             config.apikey(),
@@ -137,7 +139,7 @@ impl ChatMessageBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ExpliceConfig, Persist};
+    use crate::ExpliceConfig;
 
     #[tokio::test]
     async fn test_get_available_chat_models() -> Result<()> {

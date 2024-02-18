@@ -1,3 +1,4 @@
+use crate::completion::PathCompletion;
 use anyhow::Result;
 use dialoguer::{Confirm, Input, Select};
 use lib::{ChatAssistant, ExpliceConfig};
@@ -11,12 +12,16 @@ pub fn confirm_override() -> Result<bool> {
     Ok(confirmation)
 }
 
-pub fn chat_prompt() -> Result<Option<String>> {
-    let input: String = Input::new().allow_empty(true).interact_text()?;
-    if input.trim().is_empty() {
-        return Ok(None);
+pub fn input_chat_prompt() -> Result<Option<String>> {
+    let input: String = Input::new()
+        .allow_empty(true)
+        .completion_with(&PathCompletion::default())
+        .interact_text()?;
+
+    match input.trim().is_empty() {
+        true => Ok(None),
+        false => Ok(Some(input)),
     }
-    Ok(Some(input))
 }
 
 pub fn select_model(models: Vec<String>) -> Result<String> {

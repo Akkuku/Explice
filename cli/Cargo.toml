@@ -1,7 +1,7 @@
 [package]
 name = "cli"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [[bin]]
 name = "explice"
@@ -11,5 +11,5 @@ path = "src/main.rs"
 lib = { path= "../lib" }
 clap = { version = "4.4.11", features = ["derive"] }
 anyhow = { version = "1.0.75", features = [] }
-dialoguer = "0.11.0"
+dialoguer = {  version = "0.11.0", features = ["completion"] }
 tokio = { version = "1.34.0", features = ["rt", "net", "rt-multi-thread", "macros"] }

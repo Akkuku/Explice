@@ -1,4 +1,5 @@
 mod cmd;
+mod completion;
 mod dialog;
 
 use crate::cmd::{match_cmd, Command};
@@ -16,6 +17,6 @@ struct Cli {
 pub async fn main() {
     let args = Cli::parse();
     if let Err(err) = match_cmd(args.command).await {
-        eprintln!("{err}")
+        eprintln!("{err:?}")
     };
 }

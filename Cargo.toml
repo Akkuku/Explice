@@ -5,3 +5,13 @@ members = [
 ]
 
 resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1
+panic = 'abort'

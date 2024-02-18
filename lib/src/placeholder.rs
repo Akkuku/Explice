@@ -207,6 +207,7 @@ mod tests {
         assert!(is_file_path(r".\na me.ext"));
         assert!(is_file_path(r"..\na me.ext"));
         assert!(is_file_path(r"..\..\na me.ext"));
+        assert!(is_file_path(r"home/usr/my_project/docker-compose.yml"));
 
         Ok(())
     }

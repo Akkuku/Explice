@@ -1,6 +1,6 @@
 use crate::dialog::confirm_override;
 use clap::Args;
-use lib::{ExpliceConfig, Persist};
+use lib::ExpliceConfig;
 
 #[derive(Debug, Args)]
 #[command(arg_required_else_help = true)]
