@@ -1,137 +1,70 @@
-use crate::assistant::ChatAssistant;
-use crate::{replace_placeholders, ExpliceConfig};
+mod chat;
+mod thread;
+
+use crate::ai::chat::Chat;
 use anyhow::Result;
 use async_openai::config::OpenAIConfig;
-use async_openai::types::{
-    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
-    ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs,
-    CreateChatCompletionRequestArgs,
-};
+use async_openai::types::AssistantObject;
 use async_openai::Client;
 
-pub async fn create_chat_completion(
-    api_key: &str,
-    token_limit: &u16,
-    assistant: &ChatAssistant,
-    messages: Vec<ChatCompletionRequestMessage>,
-) -> Result<String> {
-    let open_ai_config = OpenAIConfig::new().with_api_key(api_key);
-    let client = Client::with_config(open_ai_config);
-
-    let request = CreateChatCompletionRequestArgs::default()
-        .model(assistant.model())
-        .messages(messages)
-        .max_tokens(*token_limit)
-        .build()?;
-
-    let response = client.chat().create(request).await?;
-    let completion = response
-        .choices
-        .first()
-        .expect("model returned no choices")
-        .message
-        .content
-        .as_ref()
-        .expect("message content is empty")
-        .to_string();
-
-    Ok(completion)
+pub struct OpenAi {
+    client: Client<OpenAIConfig>,
 }
 
-pub async fn get_available_chat_models(api_key: &str) -> Result<Vec<String>> {
-    let chat_models = get_available_models(api_key)
-        .await?
-        .into_iter()
-        .filter(|name| name.starts_with("gpt"))
-        .collect();
+impl OpenAi {
+    pub fn new(api_key: &str) -> Self {
+        let open_ai_config = OpenAIConfig::new().with_api_key(api_key);
+        let client = Client::with_config(open_ai_config);
 
-    Ok(chat_models)
-}
-
-async fn get_available_models(api_key: &str) -> Result<Vec<String>> {
-    let open_ai_config = OpenAIConfig::new().with_api_key(api_key);
-    let client = Client::with_config(open_ai_config);
-
-    let models = client
-        .models()
-        .list()
-        .await?
-        .data
-        .iter()
-        .map(|model| model.id.to_owned())
-        .collect();
-
-    Ok(models)
-}
-
-pub async fn create_chat_loop<F>(
-    config: &ExpliceConfig,
-    assistant: &ChatAssistant,
-    mut create_prompt: F,
-) -> Result<()>
-where
-    F: FnMut() -> Result<Option<String>>,
-{
-    println!("Enter your prompt below. Leave it blank to exit");
-
-    let mut message_builder = ChatMessageBuilder::new(assistant.system())?;
-    loop {
-        let prompt = match create_prompt()? {
-            None => break,
-            Some(prompt) => replace_placeholders(prompt)?,
-        };
-
-        message_builder.add_user(&prompt)?;
-        let completion = create_chat_completion(
-            config.api_key(),
-            config.token_limit(),
-            assistant,
-            message_builder.build().to_vec(),
-        )
-        .await?;
-        message_builder.add_assistant(&completion)?;
-
-        println!("{completion}");
+        Self { client }
     }
 
-    Ok(())
-}
-
-struct ChatMessageBuilder {
-    messages: Vec<ChatCompletionRequestMessage>,
-}
-
-impl ChatMessageBuilder {
-    pub fn new(system_message: &str) -> Result<Self> {
-        Ok(Self {
-            messages: vec![ChatCompletionRequestSystemMessageArgs::default()
-                .content(system_message)
-                .build()?
-                .into()],
-        })
+    pub fn chat(&self) -> Chat {
+        Chat::new(&self.client)
     }
 
-    pub fn add_user(&mut self, prompt: &str) -> Result<&mut Self> {
-        self.messages.push(
-            ChatCompletionRequestUserMessageArgs::default()
-                .content(prompt)
-                .build()?
-                .into(),
-        );
-        Ok(self)
+    pub async fn assistant_names(&self) -> Result<Vec<String>> {
+        let assistants = self.assistants().await?;
+        let assistant_names = assistants
+            .into_iter()
+            .map(|assistant| assistant.name.unwrap_or_default().to_owned())
+            .collect();
+
+        Ok(assistant_names)
     }
 
-    pub fn add_assistant(&mut self, completion: &str) -> Result<&mut Self> {
-        self.messages.push(
-            ChatCompletionRequestAssistantMessageArgs::default()
-                .content(completion)
-                .build()?
-                .into(),
-        );
-        Ok(self)
+    pub async fn assistant_id_by_name(&self, name: &str) -> Result<Option<String>> {
+        let assistants = self.assistants().await?;
+        let assistant = assistants
+            .into_iter()
+            .find(|assistant| assistant.name.as_deref() == Some(name));
+
+        match assistant {
+            None => Ok(None),
+            Some(assistant) => Ok(Some(assistant.id)),
+        }
     }
 
-    pub fn build(&self) -> &Vec<ChatCompletionRequestMessage> {
-        &self.messages
+    pub async fn assistants(&self) -> Result<Vec<AssistantObject>> {
+        let assistants = self.client.assistants().list(&vec![("", "")]).await?.data;
+        Ok(assistants)
+    }
+
+    pub async fn chat_models(&self) -> Result<Vec<String>> {
+        let chat_models = self
+            .models()
+            .await?
+            .into_iter()
+            .filter(|name| name.starts_with("gpt"))
+            .collect();
+
+        Ok(chat_models)
+    }
+
+    async fn models(&self) -> Result<Vec<String>> {
+        let models = self.client.models().list().await?.data;
+        let model_names = models.iter().map(|model| model.id.to_owned()).collect();
+
+        Ok(model_names)
     }
 }

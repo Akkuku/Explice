@@ -2,7 +2,7 @@ use crate::completion::PathCompletion;
 use anyhow::Result;
 use dialoguer::{BasicHistory, Input, Select};
 use lib::validation::openai_api_key_format_validator;
-use lib::{ChatAssistant, ExpliceConfig};
+use lib::{ChatAssistant, ExpliceConfig, OpenAi};
 
 pub fn input_chat_prompt(history: &mut BasicHistory) -> Result<Option<String>> {
     let input: String = Input::new()
@@ -49,4 +49,21 @@ pub fn select_assistant(config: &ExpliceConfig) -> Result<&ChatAssistant> {
     let assistant = assistants.get_by_name(assistant_names.get(selected).unwrap())?;
 
     Ok(assistant)
+}
+
+pub async fn select_external_assistant_id(open_ai: &OpenAi) -> Result<String> {
+    let assistants = open_ai.assistants().await?;
+    let assistant_names: Vec<&str> = assistants
+        .iter()
+        .map(|assistant| assistant.name.as_deref().unwrap_or_default())
+        .collect();
+
+    let selected = Select::new()
+        .with_prompt("Which assistant do you want to use?")
+        .items(&assistant_names)
+        .interact()?;
+
+    let assistant = &assistants[selected];
+
+    Ok(assistant.id.to_owned())
 }

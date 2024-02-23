@@ -1,9 +1,9 @@
 use crate::dialog::select_model;
 use clap::Args;
-use lib::{get_available_chat_models, AssistantData, ExpliceConfig};
+use lib::{AssistantData, ExpliceConfig, OpenAi};
 
 #[derive(Debug, Args)]
-pub struct AddAssistantArgs {
+pub struct AssistantAddArgs {
     #[arg(long, short)]
     name: String,
     #[arg(long, short)]
@@ -14,8 +14,8 @@ pub struct AddAssistantArgs {
     system: String,
 }
 
-impl From<AddAssistantArgs> for AssistantData {
-    fn from(assistant: AddAssistantArgs) -> Self {
+impl From<AssistantAddArgs> for AssistantData {
+    fn from(assistant: AssistantAddArgs) -> Self {
         Self {
             name: assistant.name,
             model: assistant.model.unwrap(),
@@ -25,11 +25,11 @@ impl From<AddAssistantArgs> for AssistantData {
     }
 }
 
-pub(crate) async fn assistant_add_cmd(mut args: AddAssistantArgs) -> anyhow::Result<()> {
+pub(crate) async fn assistant_add_cmd(mut args: AssistantAddArgs) -> anyhow::Result<()> {
     let mut config = ExpliceConfig::read()?;
 
     if args.model.is_none() {
-        let models = get_available_chat_models(config.api_key()).await?;
+        let models = OpenAi::new(&config.api_key()).chat_models().await?;
         let model = select_model(models)?;
         args.model = Some(model);
     }

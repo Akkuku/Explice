@@ -1,4 +1,4 @@
-use crate::get_available_chat_models;
+use crate::OpenAi;
 use anyhow::{anyhow, bail};
 
 pub fn openai_api_key_format_validator(api_key: &String) -> anyhow::Result<()> {
@@ -11,7 +11,8 @@ pub fn openai_api_key_format_validator(api_key: &String) -> anyhow::Result<()> {
 }
 
 pub async fn openai_api_key_request_validator(api_key: &str) -> anyhow::Result<()> {
-    get_available_chat_models(api_key)
+    OpenAi::new(api_key)
+        .chat_models()
         .await
         .map_err(|_| anyhow!("Failed to send API request with provided API key"))?;
 
