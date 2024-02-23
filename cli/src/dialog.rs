@@ -1,13 +1,14 @@
 use crate::completion::PathCompletion;
 use anyhow::Result;
-use dialoguer::{Input, Select};
+use dialoguer::{BasicHistory, Input, Select};
 use lib::validation::openai_api_key_format_validator;
 use lib::{ChatAssistant, ExpliceConfig};
 
-pub fn input_chat_prompt() -> Result<Option<String>> {
+pub fn input_chat_prompt(history: &mut BasicHistory) -> Result<Option<String>> {
     let input: String = Input::new()
         .allow_empty(true)
         .completion_with(&PathCompletion::default())
+        .history_with(history)
         .interact_text()?;
 
     match input.trim().is_empty() {
@@ -22,7 +23,7 @@ pub fn input_api_key() -> Result<String> {
         .validate_with(openai_api_key_format_validator)
         .interact_text()?;
 
-    Ok(input.to_owned())
+    Ok(input)
 }
 
 pub fn select_model(models: Vec<String>) -> Result<String> {

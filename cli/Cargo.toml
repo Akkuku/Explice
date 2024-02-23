@@ -11,5 +11,5 @@ path = "src/main.rs"
 lib = { path= "../lib" }
 clap = { version = "4.4.11", features = ["derive"] }
 anyhow = { version = "1.0.75", features = [] }
-dialoguer = {  version = "0.11.0", features = ["completion"] }
+dialoguer = {  version = "0.11.0", features = ["completion", "history"] }
 tokio = { version = "1.34.0", features = ["rt", "net", "rt-multi-thread", "macros"] }

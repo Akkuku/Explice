@@ -1,6 +1,7 @@
 use crate::dialog::{input_chat_prompt, select_assistant};
 use anyhow::Result;
 use clap::Args;
+use dialoguer::BasicHistory;
 use lib::{create_chat_loop, ExpliceConfig};
 
 #[derive(Debug, Args)]
@@ -17,7 +18,9 @@ pub(crate) async fn chat_cmd(args: ChatArgs) -> Result<()> {
         Some(assistant_name) => config.assistants().get_by_name(&assistant_name)?,
     };
 
-    create_chat_loop(&config, assistant, input_chat_prompt).await?;
+    let mut history = BasicHistory::new().max_entries(8).no_duplicates(true);
+    let create_prompt = move || input_chat_prompt(&mut history);
+    create_chat_loop(&config, assistant, create_prompt).await?;
 
     Ok(())
 }

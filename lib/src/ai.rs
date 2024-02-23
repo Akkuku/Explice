@@ -67,10 +67,10 @@ async fn get_available_models(api_key: &str) -> Result<Vec<String>> {
 pub async fn create_chat_loop<F>(
     config: &ExpliceConfig,
     assistant: &ChatAssistant,
-    create_prompt: F,
+    mut create_prompt: F,
 ) -> Result<()>
 where
-    F: Fn() -> Result<Option<String>>,
+    F: FnMut() -> Result<Option<String>>,
 {
     println!("Enter your prompt below. Leave it blank to exit");
 
