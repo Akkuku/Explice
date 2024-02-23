@@ -4,14 +4,14 @@ mod ai;
 mod assistant;
 mod completion;
 mod config;
-mod persist;
+pub(crate) mod persist;
 mod placeholder;
+pub mod validation;
 
 pub use ai::*;
 pub use assistant::*;
 pub use completion::*;
 pub use config::*;
-pub use persist::*;
 pub use placeholder::*;
 
 pub const APP_NAME: &str = "explice";

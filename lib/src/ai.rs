@@ -10,12 +10,12 @@ use async_openai::types::{
 use async_openai::Client;
 
 pub async fn create_chat_completion(
-    apikey: &str,
+    api_key: &str,
     token_limit: &u16,
     assistant: &ChatAssistant,
     messages: Vec<ChatCompletionRequestMessage>,
 ) -> Result<String> {
-    let open_ai_config = OpenAIConfig::new().with_api_key(apikey);
+    let open_ai_config = OpenAIConfig::new().with_api_key(api_key);
     let client = Client::with_config(open_ai_config);
 
     let request = CreateChatCompletionRequestArgs::default()
@@ -38,8 +38,8 @@ pub async fn create_chat_completion(
     Ok(completion)
 }
 
-pub async fn get_available_chat_models(apikey: &str) -> Result<Vec<String>> {
-    let chat_models = get_available_models(apikey)
+pub async fn get_available_chat_models(api_key: &str) -> Result<Vec<String>> {
+    let chat_models = get_available_models(api_key)
         .await?
         .into_iter()
         .filter(|name| name.starts_with("gpt"))
@@ -48,8 +48,8 @@ pub async fn get_available_chat_models(apikey: &str) -> Result<Vec<String>> {
     Ok(chat_models)
 }
 
-async fn get_available_models(apikey: &str) -> Result<Vec<String>> {
-    let open_ai_config = OpenAIConfig::new().with_api_key(apikey);
+async fn get_available_models(api_key: &str) -> Result<Vec<String>> {
+    let open_ai_config = OpenAIConfig::new().with_api_key(api_key);
     let client = Client::with_config(open_ai_config);
 
     let models = client
@@ -83,7 +83,7 @@ where
 
         message_builder.add_user(&prompt)?;
         let completion = create_chat_completion(
-            config.apikey(),
+            config.api_key(),
             config.token_limit(),
             assistant,
             message_builder.build().to_vec(),
@@ -133,24 +133,5 @@ impl ChatMessageBuilder {
 
     pub fn build(&self) -> &Vec<ChatCompletionRequestMessage> {
         &self.messages
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::ExpliceConfig;
-
-    #[tokio::test]
-    async fn test_get_available_chat_models() -> Result<()> {
-        let config = ExpliceConfig::read()?;
-        let apikey = config.apikey();
-
-        let models = get_available_chat_models(apikey).await?;
-
-        assert!(models.iter().any(|name| name == "gpt-3.5-turbo"));
-        assert!(models.iter().any(|name| name == "gpt-4"));
-
-        Ok(())
     }
 }

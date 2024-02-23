@@ -1,16 +1,8 @@
 use crate::completion::PathCompletion;
 use anyhow::Result;
-use dialoguer::{Confirm, Input, Select};
+use dialoguer::{Input, Select};
+use lib::validation::openai_api_key_format_validator;
 use lib::{ChatAssistant, ExpliceConfig};
-
-pub fn confirm_override() -> Result<bool> {
-    let confirmation = Confirm::new()
-        .with_prompt("Do you want to override?")
-        .default(false)
-        .interact()?;
-
-    Ok(confirmation)
-}
 
 pub fn input_chat_prompt() -> Result<Option<String>> {
     let input: String = Input::new()
@@ -22,6 +14,15 @@ pub fn input_chat_prompt() -> Result<Option<String>> {
         true => Ok(None),
         false => Ok(Some(input)),
     }
+}
+
+pub fn input_api_key() -> Result<String> {
+    let input: String = Input::new()
+        .with_prompt("Please input OpenAi API key")
+        .validate_with(openai_api_key_format_validator)
+        .interact_text()?;
+
+    Ok(input.to_owned())
 }
 
 pub fn select_model(models: Vec<String>) -> Result<String> {

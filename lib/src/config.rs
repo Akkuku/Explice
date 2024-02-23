@@ -1,4 +1,5 @@
-use crate::{ChatAssistant, ChatAssistants, PersistConfig};
+use crate::persist::PersistConfig;
+use crate::{ChatAssistant, ChatAssistants};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
@@ -6,24 +7,24 @@ const CONFIG_FILE_NAME: &str = "config.json";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ExpliceConfig {
-    apikey: String,
+    api_key: String,
     token_limit: u16,
     #[serde(flatten)]
     assistants: ChatAssistants,
 }
 
 impl ExpliceConfig {
-    pub fn new(apikey: &str, token_limit: &u16) -> Self {
+    pub fn new(api_key: String, token_limit: u16) -> Self {
         ExpliceConfig {
-            apikey: apikey.to_owned(),
-            token_limit: token_limit.to_owned(),
+            api_key,
+            token_limit,
             assistants: Default::default(),
         }
     }
 
-    pub fn update(&mut self, apikey: Option<&str>, token_limit: Option<u16>) -> &mut Self {
-        if let Some(apikey) = apikey {
-            self.apikey = apikey.to_owned();
+    pub fn update(&mut self, api_key: Option<&str>, token_limit: Option<u16>) -> &mut Self {
+        if let Some(api_key) = api_key {
+            self.api_key = api_key.to_owned();
         };
         if let Some(token_limit) = token_limit {
             self.token_limit = token_limit.to_owned();
@@ -32,8 +33,8 @@ impl ExpliceConfig {
         self
     }
 
-    pub fn apikey(&self) -> &str {
-        &self.apikey
+    pub fn api_key(&self) -> &str {
+        &self.api_key
     }
 
     pub fn token_limit(&self) -> &u16 {

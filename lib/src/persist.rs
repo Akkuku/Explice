@@ -4,13 +4,16 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-pub struct PersistConfig;
+pub(crate) struct PersistConfig;
 
 impl PersistConfig {
-    pub fn read<T: for<'a> Deserialize<'a>>(file_name: &str) -> anyhow::Result<T> {
+    pub fn read<T>(file_name: &str) -> anyhow::Result<T>
+    where
+        T: for<'a> Deserialize<'a>,
+    {
         let path = Self::path(file_name)?;
         if !path.try_exists()? {
-            bail!("Config not found, run {APP_NAME} init first")
+            bail!("Config not found, run \"{APP_NAME} config\" first")
         }
 
         let content = fs::read_to_string(path)?;
@@ -19,7 +22,10 @@ impl PersistConfig {
         Ok(config)
     }
 
-    pub fn save<T: Sized + Serialize>(file_name: &str, content: &T) -> anyhow::Result<()> {
+    pub fn save<T>(file_name: &str, content: &T) -> anyhow::Result<()>
+    where
+        T: Sized + Serialize,
+    {
         let path = Self::path(file_name)?;
         let dir = path.parent().unwrap();
         if !dir.try_exists()? {

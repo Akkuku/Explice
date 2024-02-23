@@ -29,7 +29,7 @@ pub(crate) async fn assistant_add_cmd(mut args: AddAssistantArgs) -> anyhow::Res
     let mut config = ExpliceConfig::read()?;
 
     if args.model.is_none() {
-        let models = get_available_chat_models(config.apikey()).await?;
+        let models = get_available_chat_models(config.api_key()).await?;
         let model = select_model(models)?;
         args.model = Some(model);
     }
