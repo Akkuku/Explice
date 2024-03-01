@@ -7,33 +7,41 @@ use std::path::PathBuf;
 pub(crate) struct PersistConfig;
 
 impl PersistConfig {
-    pub fn read<T>(file_name: &str) -> anyhow::Result<T>
+    pub fn read_json<T>(file_name: &str) -> anyhow::Result<T>
     where
         T: for<'a> Deserialize<'a>,
     {
+        let content = Self::read(file_name)?;
+        serde_json::from_str(&content).map_err(anyhow::Error::from)
+    }
+
+    pub fn save_json<T>(file_name: &str, content: &T) -> anyhow::Result<()>
+    where
+        T: Sized + Serialize,
+    {
+        let json = serde_json::to_string(&content)?;
+        Self::save(file_name, &json)
+    }
+
+    pub fn read(file_name: &str) -> anyhow::Result<String> {
         let path = Self::path(file_name)?;
         if !path.try_exists()? {
             bail!("Config not found, run \"{APP_NAME} config\" first")
         }
 
         let content = fs::read_to_string(path)?;
-        let config = serde_json::from_str(&content)?;
 
-        Ok(config)
+        Ok(content)
     }
 
-    pub fn save<T>(file_name: &str, content: &T) -> anyhow::Result<()>
-    where
-        T: Sized + Serialize,
-    {
+    pub fn save(file_name: &str, content: &str) -> anyhow::Result<()> {
         let path = Self::path(file_name)?;
         let dir = path.parent().unwrap();
         if !dir.try_exists()? {
             fs::create_dir_all(dir)?;
         }
 
-        let json = serde_json::to_string(&content)?;
-        fs::write(path, json)?;
+        fs::write(path, content)?;
 
         Ok(())
     }

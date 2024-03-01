@@ -33,7 +33,7 @@ impl OpenAi {
         Ok(assistant_names)
     }
 
-    pub async fn assistant_id_by_name(&self, name: &str) -> Result<Option<String>> {
+    pub async fn assistant_by_name(&self, name: &str) -> Result<Option<AssistantObject>> {
         let assistants = self.assistants().await?;
         let assistant = assistants
             .into_iter()
@@ -41,12 +41,17 @@ impl OpenAi {
 
         match assistant {
             None => Ok(None),
-            Some(assistant) => Ok(Some(assistant.id)),
+            Some(assistant) => Ok(Some(assistant)),
         }
     }
 
     pub async fn assistants(&self) -> Result<Vec<AssistantObject>> {
-        let assistants = self.client.assistants().list(&vec![("", "")]).await?.data;
+        let assistants = self
+            .client
+            .assistants()
+            .list(&vec![("limit", "100")])
+            .await?
+            .data;
         Ok(assistants)
     }
 

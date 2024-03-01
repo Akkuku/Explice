@@ -2,7 +2,7 @@ use crate::completion::PathCompletion;
 use anyhow::Result;
 use dialoguer::{BasicHistory, Input, Select};
 use lib::validation::openai_api_key_format_validator;
-use lib::{ChatAssistant, ExpliceConfig, OpenAi};
+use lib::{ExpliceConfig, ExternalChatAssistant, LocalChatAssistant, OpenAi};
 
 pub fn input_chat_prompt(history: &mut BasicHistory) -> Result<Option<String>> {
     let input: String = Input::new()
@@ -37,7 +37,7 @@ pub fn select_model(models: Vec<String>) -> Result<String> {
     Ok(model)
 }
 
-pub fn select_assistant(config: &ExpliceConfig) -> Result<&ChatAssistant> {
+pub fn select_local_assistant(config: &ExpliceConfig) -> Result<&LocalChatAssistant> {
     let assistants = config.assistants();
     let assistant_names = &assistants.names();
 
@@ -51,11 +51,11 @@ pub fn select_assistant(config: &ExpliceConfig) -> Result<&ChatAssistant> {
     Ok(assistant)
 }
 
-pub async fn select_external_assistant_id(open_ai: &OpenAi) -> Result<String> {
-    let assistants = open_ai.assistants().await?;
-    let assistant_names: Vec<&str> = assistants
+pub async fn select_external_assistant(open_ai: &OpenAi) -> Result<ExternalChatAssistant> {
+    let mut assistants = open_ai.assistants().await?;
+    let assistant_names: &Vec<&str> = &assistants
         .iter()
-        .map(|assistant| assistant.name.as_deref().unwrap_or_default())
+        .map(|assistant| assistant.name.as_deref().unwrap_or(&assistant.id))
         .collect();
 
     let selected = Select::new()
@@ -63,7 +63,7 @@ pub async fn select_external_assistant_id(open_ai: &OpenAi) -> Result<String> {
         .items(&assistant_names)
         .interact()?;
 
-    let assistant = &assistants[selected];
+    let assistant = assistants.remove(selected);
 
-    Ok(assistant.id.to_owned())
+    Ok(assistant.into())
 }

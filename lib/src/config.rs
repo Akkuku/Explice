@@ -1,5 +1,5 @@
 use crate::persist::PersistConfig;
-use crate::{ChatAssistant, ChatAssistants};
+use crate::{ChatAssistants, LocalChatAssistant};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
@@ -41,7 +41,7 @@ impl ExpliceConfig {
         &self.token_limit
     }
 
-    pub fn push_assistant(&mut self, assistant: ChatAssistant) -> Result<&Self> {
+    pub fn push_assistant(&mut self, assistant: LocalChatAssistant) -> Result<&Self> {
         self.assistants.push(assistant)?;
         Ok(self)
     }
@@ -51,11 +51,11 @@ impl ExpliceConfig {
     }
 
     pub fn read() -> Result<Self> {
-        PersistConfig::read(CONFIG_FILE_NAME)
+        PersistConfig::read_json(CONFIG_FILE_NAME)
     }
 
     pub fn save(&self) -> Result<()> {
-        PersistConfig::save(CONFIG_FILE_NAME, &self)
+        PersistConfig::save_json(CONFIG_FILE_NAME, &self)
     }
 
     pub fn exists() -> Result<bool> {

@@ -1,11 +1,14 @@
 use crate::ai::thread::Thread;
-use crate::{replace_placeholders, ChatAssistant, ExpliceConfig};
+use crate::chat_record::ChatMessage;
+use crate::{
+    replace_placeholders, ChatRecord, ExpliceConfig, ExternalChatAssistant, LocalChatAssistant,
+};
 use anyhow::Context;
 use async_openai::config::OpenAIConfig;
 use async_openai::types::{
     ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
     ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs,
-    CreateChatCompletionRequestArgs,
+    ChatCompletionRequestUserMessageContent, CreateChatCompletionRequestArgs,
 };
 use async_openai::Client;
 
@@ -23,47 +26,44 @@ impl Chat {
     pub async fn create_loop<FP, FC>(
         &self,
         config: &ExpliceConfig,
-        assistant: &ChatAssistant,
+        assistant: &LocalChatAssistant,
         mut create_prompt: FP,
         on_completion: FC,
-    ) -> anyhow::Result<()>
+    ) -> anyhow::Result<ChatRecord>
     where
         FP: FnMut() -> anyhow::Result<Option<String>>,
-        FC: FnOnce(String) -> () + Copy,
+        FC: Fn(&str) -> (),
     {
-        let mut message_builder = ChatMessageBuilder::new(assistant.system())?;
+        let mut message_builder = ChatMessagesBuilder::new(assistant.system())?;
         loop {
             let prompt = match create_prompt()? {
                 None => break,
                 Some(prompt) => replace_placeholders(prompt)?,
             };
-
             message_builder.add_user(&prompt)?;
+
             let completion = self
-                .chat_completion(
-                    config.token_limit(),
-                    assistant,
-                    message_builder.build().to_vec(),
-                )
+                .chat_completion(config.token_limit(), assistant, message_builder.build())
                 .await?;
             message_builder.add_assistant(&completion)?;
 
-            on_completion(completion);
+            on_completion(&completion);
         }
 
-        Ok(())
+        Ok(message_builder.to_chat_record(assistant.name()))
     }
 
     pub async fn create_loop_with_thread<FP, FC>(
         &self,
-        assistant_id: &str,
+        assistant: &ExternalChatAssistant,
         mut create_prompt: FP,
         on_completion: FC,
-    ) -> anyhow::Result<()>
+    ) -> anyhow::Result<ChatRecord>
     where
         FP: FnMut() -> anyhow::Result<Option<String>>,
-        FC: FnOnce(String) -> () + Copy,
+        FC: Fn(&str) -> (),
     {
+        let mut chat_record = ChatRecord::new(assistant.name());
         let thread = Thread::new(&self.client).await?;
 
         loop {
@@ -71,19 +71,21 @@ impl Chat {
                 None => break,
                 Some(prompt) => replace_placeholders(prompt)?,
             };
+            chat_record.add_user(&prompt);
 
-            let completion = thread.chat_completion(&prompt, &assistant_id).await?;
+            let completion = thread.chat_completion(&prompt, &assistant.id()).await?;
+            chat_record.add_assistant(&completion);
 
-            on_completion(completion);
+            on_completion(&completion);
         }
 
-        Ok(())
+        Ok(chat_record)
     }
 
     async fn chat_completion(
         &self,
         token_limit: &u16,
-        assistant: &ChatAssistant,
+        assistant: &LocalChatAssistant,
         messages: Vec<ChatCompletionRequestMessage>,
     ) -> anyhow::Result<String> {
         let request = CreateChatCompletionRequestArgs::default()
@@ -107,11 +109,11 @@ impl Chat {
     }
 }
 
-struct ChatMessageBuilder {
+struct ChatMessagesBuilder {
     messages: Vec<ChatCompletionRequestMessage>,
 }
 
-impl ChatMessageBuilder {
+impl ChatMessagesBuilder {
     pub(crate) fn new(system_message: &str) -> anyhow::Result<Self> {
         Ok(Self {
             messages: vec![ChatCompletionRequestSystemMessageArgs::default()
@@ -141,7 +143,24 @@ impl ChatMessageBuilder {
         Ok(self)
     }
 
-    pub(crate) fn build(&self) -> &Vec<ChatCompletionRequestMessage> {
-        &self.messages
+    pub(crate) fn build(&self) -> Vec<ChatCompletionRequestMessage> {
+        self.messages.to_vec()
+    }
+
+    pub(crate) fn to_chat_record(self, assistant_name: &str) -> ChatRecord {
+        let messages = self.messages
+            .into_iter()
+            .filter_map(|message| match message {
+                ChatCompletionRequestMessage::User(message) => {
+                    let ChatCompletionRequestUserMessageContent::Text(text) = message.content else  {
+                        return None;
+                    };
+                    Some(ChatMessage::new_user(&text))
+                }
+                ChatCompletionRequestMessage::Assistant(message) => Some(ChatMessage::new_assistant(&message.content?)),
+                _ => None
+            }).collect();
+
+        ChatRecord::new(assistant_name).with_messages(messages)
     }
 }

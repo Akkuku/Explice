@@ -1,4 +1,5 @@
 use crate::dialog::select_model;
+use anyhow::Context;
 use clap::Args;
 use lib::{AssistantData, ExpliceConfig, OpenAi};
 
@@ -8,21 +9,8 @@ pub struct AssistantAddArgs {
     name: String,
     #[arg(long, short)]
     model: Option<String>,
-    #[arg(long, short, default_value = "")]
-    description: String,
     #[arg(long, short, default_value = "You are a helpful assistant")]
     system: String,
-}
-
-impl From<AssistantAddArgs> for AssistantData {
-    fn from(assistant: AssistantAddArgs) -> Self {
-        Self {
-            name: assistant.name,
-            model: assistant.model.unwrap(),
-            description: assistant.description,
-            system: assistant.system,
-        }
-    }
 }
 
 pub(crate) async fn assistant_add_cmd(mut args: AssistantAddArgs) -> anyhow::Result<()> {
@@ -35,9 +23,21 @@ pub(crate) async fn assistant_add_cmd(mut args: AssistantAddArgs) -> anyhow::Res
     }
 
     config
-        .push_assistant(AssistantData::from(args).into())?
+        .push_assistant(AssistantData::try_from(args)?.into())?
         .save()?;
 
     println!("Successfully added assistant");
     Ok(())
+}
+
+impl TryFrom<AssistantAddArgs> for AssistantData {
+    type Error = anyhow::Error;
+
+    fn try_from(assistant: AssistantAddArgs) -> Result<Self, Self::Error> {
+        Ok(Self {
+            name: assistant.name,
+            model: assistant.model.context("assistant model cannot be empty")?,
+            system: assistant.system,
+        })
+    }
 }
