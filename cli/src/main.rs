@@ -1,6 +1,7 @@
 mod cmd;
 mod completion;
 mod dialog;
+mod storage;
 
 use crate::cmd::{match_cmd, Command};
 use clap::Parser;

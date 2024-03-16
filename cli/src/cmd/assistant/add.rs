@@ -1,7 +1,8 @@
 use crate::dialog::select_model;
+use crate::storage::Storage;
 use anyhow::Context;
 use clap::Args;
-use lib::{AssistantData, ExpliceConfig, OpenAi};
+use lib::{AssistantData, OpenAi};
 
 #[derive(Debug, Args)]
 pub struct AssistantAddArgs {
@@ -14,7 +15,7 @@ pub struct AssistantAddArgs {
 }
 
 pub(crate) async fn assistant_add_cmd(mut args: AssistantAddArgs) -> anyhow::Result<()> {
-    let mut config = ExpliceConfig::read()?;
+    let config = Storage::config()?.read()?;
 
     if args.model.is_none() {
         let models = OpenAi::new(&config.api_key()).chat_models().await?;
@@ -22,9 +23,7 @@ pub(crate) async fn assistant_add_cmd(mut args: AssistantAddArgs) -> anyhow::Res
         args.model = Some(model);
     }
 
-    config
-        .push_assistant(AssistantData::try_from(args)?.into())?
-        .save()?;
+    Storage::assistants()?.add(AssistantData::try_from(args)?.into())?;
 
     println!("Successfully added assistant");
     Ok(())

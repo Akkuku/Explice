@@ -1,8 +1,6 @@
-use crate::ai::thread::Thread;
 use crate::chat_record::ChatMessage;
-use crate::{
-    replace_placeholders, ChatRecord, ExpliceConfig, ExternalChatAssistant, LocalChatAssistant,
-};
+use crate::open_ai::thread::Thread;
+use crate::{replace_placeholders, ChatAssistant, ChatRecord, ExpliceConfig, OpenAiChatAssistant};
 use anyhow::Context;
 use async_openai::config::OpenAIConfig;
 use async_openai::types::{
@@ -26,7 +24,7 @@ impl Chat {
     pub async fn create_loop<FP, FC>(
         &self,
         config: &ExpliceConfig,
-        assistant: &LocalChatAssistant,
+        assistant: &ChatAssistant,
         mut create_prompt: FP,
         on_completion: FC,
     ) -> anyhow::Result<ChatRecord>
@@ -55,7 +53,7 @@ impl Chat {
 
     pub async fn create_loop_with_thread<FP, FC>(
         &self,
-        assistant: &ExternalChatAssistant,
+        assistant: &OpenAiChatAssistant,
         mut create_prompt: FP,
         on_completion: FC,
     ) -> anyhow::Result<ChatRecord>
@@ -85,7 +83,7 @@ impl Chat {
     async fn chat_completion(
         &self,
         token_limit: &u16,
-        assistant: &LocalChatAssistant,
+        assistant: &ChatAssistant,
         messages: Vec<ChatCompletionRequestMessage>,
     ) -> anyhow::Result<String> {
         let request = CreateChatCompletionRequestArgs::default()
@@ -114,7 +112,7 @@ struct ChatMessagesBuilder {
 }
 
 impl ChatMessagesBuilder {
-    pub(crate) fn new(system_message: &str) -> anyhow::Result<Self> {
+    fn new(system_message: &str) -> anyhow::Result<Self> {
         Ok(Self {
             messages: vec![ChatCompletionRequestSystemMessageArgs::default()
                 .content(system_message)
@@ -123,7 +121,7 @@ impl ChatMessagesBuilder {
         })
     }
 
-    pub(crate) fn add_user(&mut self, prompt: &str) -> anyhow::Result<&mut Self> {
+    fn add_user(&mut self, prompt: &str) -> anyhow::Result<&mut Self> {
         self.messages.push(
             ChatCompletionRequestUserMessageArgs::default()
                 .content(prompt)
@@ -133,7 +131,7 @@ impl ChatMessagesBuilder {
         Ok(self)
     }
 
-    pub(crate) fn add_assistant(&mut self, completion: &str) -> anyhow::Result<&mut Self> {
+    fn add_assistant(&mut self, completion: &str) -> anyhow::Result<&mut Self> {
         self.messages.push(
             ChatCompletionRequestAssistantMessageArgs::default()
                 .content(completion)
@@ -143,11 +141,11 @@ impl ChatMessagesBuilder {
         Ok(self)
     }
 
-    pub(crate) fn build(&self) -> Vec<ChatCompletionRequestMessage> {
+    fn build(&self) -> Vec<ChatCompletionRequestMessage> {
         self.messages.to_vec()
     }
 
-    pub(crate) fn to_chat_record(self, assistant_name: &str) -> ChatRecord {
+    fn to_chat_record(self, assistant_name: &str) -> ChatRecord {
         let messages = self.messages
             .into_iter()
             .filter_map(|message| match message {

@@ -8,8 +8,10 @@ name = "explice"
 path = "src/main.rs"
 
 [dependencies]
-lib = { path= "../lib" }
-clap = { version = "4.4.11", features = ["derive"] }
-anyhow = { version = "1.0.75", features = [] }
-dialoguer = {  version = "0.11.0", features = ["completion", "history"] }
-tokio = { version = "1.34.0", features = ["rt", "net", "rt-multi-thread", "macros"] }
+lib = { path = "../lib" }
+persist = { path = "../persist" }
+clap = { version = "4.5.3", features = ["derive"] }
+anyhow = "1.0.81"
+dialoguer = { version = "0.11.0", features = ["completion", "history"] }
+tokio = { version = "1.36.0", features = ["rt", "net", "rt-multi-thread", "macros"] }
+dirs = "5.0.1"

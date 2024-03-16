@@ -1,7 +1,10 @@
-use crate::persist::PersistConfig;
+use crate::KVStorage;
 use chrono::{DateTime, Local};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+use ulid::Ulid;
 
+#[derive(Serialize, Deserialize)]
 pub struct ChatRecord {
     assistant_name: String,
     creation_date: DateTime<Local>,
@@ -29,17 +32,6 @@ impl ChatRecord {
     pub fn add_assistant(&mut self, message: &str) {
         self.messages.push(ChatMessage::new_assistant(message))
     }
-
-    pub fn save(&self) -> anyhow::Result<()> {
-        let file_name = format!(
-            "{}-{}.txt",
-            self.assistant_name,
-            self.creation_date.date_naive().to_string()
-        );
-
-        let content = self.to_string();
-        PersistConfig::save(&file_name, &content)
-    }
 }
 
 impl Display for ChatRecord {
@@ -61,11 +53,13 @@ impl Display for ChatRecord {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub(crate) struct ChatMessage {
     role: Role,
     content: String,
 }
 
+#[derive(Serialize, Deserialize)]
 enum Role {
     User,
     Assistant,
@@ -94,5 +88,26 @@ impl Display for ChatMessage {
             Role::Assistant => "Assistant",
         };
         write!(f, "{}: {}", role, self.content)
+    }
+}
+
+pub struct ChatRecordStorage<S>
+where
+    S: KVStorage<String, ChatRecord>,
+{
+    storage: S,
+}
+
+impl<S> ChatRecordStorage<S>
+where
+    S: KVStorage<String, ChatRecord>,
+{
+    pub fn new(storage: S) -> Self {
+        Self { storage }
+    }
+
+    pub fn save(&self, record: ChatRecord) -> anyhow::Result<()> {
+        let key = Ulid::new().to_string();
+        self.storage.add(key, record)
     }
 }

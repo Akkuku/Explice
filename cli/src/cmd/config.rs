@@ -1,8 +1,10 @@
 use crate::dialog::input_api_key;
+use crate::storage::Storage;
 use anyhow::bail;
 use clap::Args;
 use lib::validation::{openai_api_key_format_validator, openai_api_key_request_validator};
-use lib::ExpliceConfig;
+use lib::ExpliceConfigStorage;
+use persist::LocalJsonStorage;
 
 #[derive(Debug, Args)]
 pub struct ConfigArgs {
@@ -19,15 +21,19 @@ impl ConfigArgs {
 }
 
 pub(crate) async fn config_cmd(args: ConfigArgs) -> anyhow::Result<()> {
-    match ExpliceConfig::exists()? {
-        true => update_config(args).await?,
-        false => create_config(args).await?,
+    let config_storage = Storage::config()?;
+    match config_storage.is_initialized() {
+        true => update_config(args, config_storage).await?,
+        false => create_config(args, config_storage).await?,
     };
 
     Ok(())
 }
 
-async fn update_config(args: ConfigArgs) -> anyhow::Result<()> {
+async fn update_config(
+    args: ConfigArgs,
+    config_storage: ExpliceConfigStorage<LocalJsonStorage>,
+) -> anyhow::Result<()> {
     if args.are_empty() {
         bail!("Config exists, provide some arguments for update");
     }
@@ -37,15 +43,16 @@ async fn update_config(args: ConfigArgs) -> anyhow::Result<()> {
         openai_api_key_request_validator(&api_key).await?;
     };
 
-    ExpliceConfig::read()?
-        .update(args.api_key.as_deref(), args.token_limit)
-        .save()?;
+    config_storage.update(args.api_key.as_deref(), args.token_limit)?;
 
     println!("Successfully updated config");
     Ok(())
 }
 
-async fn create_config(args: ConfigArgs) -> anyhow::Result<()> {
+async fn create_config(
+    args: ConfigArgs,
+    config_storage: ExpliceConfigStorage<LocalJsonStorage>,
+) -> anyhow::Result<()> {
     let api_key = match args.api_key {
         None => input_api_key()?,
         Some(api_key) => api_key,
@@ -56,8 +63,8 @@ async fn create_config(args: ConfigArgs) -> anyhow::Result<()> {
 
     let token_limit = args.token_limit.unwrap_or(40);
 
-    let config = ExpliceConfig::new(api_key, token_limit);
-    config.save()?;
+    config_storage.init(api_key, token_limit)?;
+    Storage::assistants()?.init()?;
 
     println!("Successfully initialized");
     Ok(())
