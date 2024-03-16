@@ -1,3 +1,4 @@
+mod chat_controller;
 mod cmd;
 mod completion;
 mod dialog;

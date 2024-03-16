@@ -1,6 +1,6 @@
 use crate::completion::PathCompletion;
 use anyhow::Result;
-use dialoguer::{BasicHistory, Input, Select};
+use dialoguer::{BasicHistory, Confirm, Input, Select};
 use lib::validation::openai_api_key_format_validator;
 use lib::ChatAssistant;
 
@@ -51,4 +51,13 @@ pub fn select_assistant(mut assistants: Vec<ChatAssistant>) -> Result<ChatAssist
     let assistant = assistants.remove(selected);
 
     Ok(assistant)
+}
+
+pub fn confirm_execute() -> Result<bool> {
+    let confirmation = Confirm::new()
+        .with_prompt("Do you want to execute?")
+        .default(true)
+        .interact()?;
+
+    Ok(confirmation)
 }

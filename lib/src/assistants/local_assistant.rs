@@ -19,6 +19,13 @@ impl Default for LocalChatAssistant {
 }
 
 impl LocalChatAssistant {
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            ..Default::default()
+        }
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -27,6 +34,15 @@ impl LocalChatAssistant {
     }
     pub fn system(&self) -> &str {
         &self.system
+    }
+
+    pub fn with_model(mut self, model: &str) -> Self {
+        self.model = model.to_owned();
+        self
+    }
+    pub fn with_system(mut self, system: &str) -> Self {
+        self.system = system.to_owned();
+        self
     }
 }
 

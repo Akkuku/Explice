@@ -2,12 +2,13 @@ mod assistants;
 mod chat;
 mod thread;
 
-use crate::open_ai::assistants::OpenAiAssistants;
-use crate::open_ai::chat::Chat;
 use anyhow::Result;
+use assistants::OpenAiAssistants;
 pub use assistants::OpenAiChatAssistant;
 use async_openai::config::OpenAIConfig;
 use async_openai::Client;
+use chat::Chat;
+pub use chat::ChatController;
 
 pub struct OpenAi {
     client: Client<OpenAIConfig>,
@@ -21,9 +22,13 @@ impl OpenAi {
         Self { client }
     }
 
-    pub fn chat(&self) -> Chat {
-        Chat::new(&self.client)
+    pub fn chat<C>(&self, controller: C) -> Chat<C>
+    where
+        C: ChatController,
+    {
+        Chat::new(&self.client, controller)
     }
+
     pub fn assistants(&self) -> OpenAiAssistants {
         OpenAiAssistants::new(&self.client)
     }

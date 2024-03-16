@@ -10,31 +10,38 @@ use async_openai::types::{
 };
 use async_openai::Client;
 
-pub struct Chat {
-    client: Client<OpenAIConfig>,
+pub trait ChatController {
+    fn create_prompt(&mut self) -> anyhow::Result<Option<String>>;
+    fn on_completion(&self, completion: &str) -> anyhow::Result<()>;
 }
 
-impl Chat {
-    pub fn new(open_ai_client: &Client<OpenAIConfig>) -> Self {
+pub struct Chat<'c, C>
+where
+    C: ChatController,
+{
+    client: &'c Client<OpenAIConfig>,
+    controller: C,
+}
+
+impl<'c, C> Chat<'c, C>
+where
+    C: ChatController,
+{
+    pub fn new(open_ai_client: &'c Client<OpenAIConfig>, controller: C) -> Self {
         Self {
-            client: open_ai_client.to_owned(),
+            client: open_ai_client,
+            controller,
         }
     }
 
-    pub async fn create_loop<FP, FC>(
-        &self,
+    pub async fn create_loop(
+        &mut self,
         config: &ExpliceConfig,
         assistant: &ChatAssistant,
-        mut create_prompt: FP,
-        on_completion: FC,
-    ) -> anyhow::Result<ChatRecord>
-    where
-        FP: FnMut() -> anyhow::Result<Option<String>>,
-        FC: Fn(&str) -> (),
-    {
+    ) -> anyhow::Result<ChatRecord> {
         let mut message_builder = ChatMessagesBuilder::new(assistant.system())?;
         loop {
-            let prompt = match create_prompt()? {
+            let prompt = match self.controller.create_prompt()? {
                 None => break,
                 Some(prompt) => replace_placeholders(prompt)?,
             };
@@ -45,27 +52,21 @@ impl Chat {
                 .await?;
             message_builder.add_assistant(&completion)?;
 
-            on_completion(&completion);
+            self.controller.on_completion(&completion)?;
         }
 
         Ok(message_builder.to_chat_record(assistant.name()))
     }
 
-    pub async fn create_loop_with_thread<FP, FC>(
-        &self,
+    pub async fn create_loop_with_thread(
+        &mut self,
         assistant: &OpenAiChatAssistant,
-        mut create_prompt: FP,
-        on_completion: FC,
-    ) -> anyhow::Result<ChatRecord>
-    where
-        FP: FnMut() -> anyhow::Result<Option<String>>,
-        FC: Fn(&str) -> (),
-    {
+    ) -> anyhow::Result<ChatRecord> {
         let mut chat_record = ChatRecord::new(assistant.name());
         let thread = Thread::new(&self.client).await?;
 
         loop {
-            let prompt = match create_prompt()? {
+            let prompt = match self.controller.create_prompt()? {
                 None => break,
                 Some(prompt) => replace_placeholders(prompt)?,
             };
@@ -74,7 +75,7 @@ impl Chat {
             let completion = thread.chat_completion(&prompt, &assistant.id()).await?;
             chat_record.add_assistant(&completion);
 
-            on_completion(&completion);
+            self.controller.on_completion(&completion)?;
         }
 
         Ok(chat_record)
@@ -146,18 +147,23 @@ impl ChatMessagesBuilder {
     }
 
     fn to_chat_record(self, assistant_name: &str) -> ChatRecord {
-        let messages = self.messages
+        let messages = self
+            .messages
             .into_iter()
             .filter_map(|message| match message {
                 ChatCompletionRequestMessage::User(message) => {
-                    let ChatCompletionRequestUserMessageContent::Text(text) = message.content else  {
+                    let ChatCompletionRequestUserMessageContent::Text(text) = message.content
+                    else {
                         return None;
                     };
                     Some(ChatMessage::new_user(&text))
                 }
-                ChatCompletionRequestMessage::Assistant(message) => Some(ChatMessage::new_assistant(&message.content?)),
-                _ => None
-            }).collect();
+                ChatCompletionRequestMessage::Assistant(message) => {
+                    Some(ChatMessage::new_assistant(&message.content?))
+                }
+                _ => None,
+            })
+            .collect();
 
         ChatRecord::new(assistant_name).with_messages(messages)
     }

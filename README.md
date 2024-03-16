@@ -21,3 +21,4 @@ explice is a CLI tool for creating reusable GPT assistants with chat completions
 - [x] Path completion on tab or right arrow click
 - [x] Prompt history with up/down arrow click
 - [x] OpenAi Assistants support with threads
+- [x] Prompted shell commands execution
