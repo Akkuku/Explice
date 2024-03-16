@@ -6,6 +6,7 @@ mod completion;
 mod config;
 mod open_ai;
 mod placeholder;
+pub mod predefined;
 mod storage;
 pub mod validation;
 

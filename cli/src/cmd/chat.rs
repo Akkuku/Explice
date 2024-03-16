@@ -1,8 +1,8 @@
-use crate::dialog::{input_chat_prompt, select_assistant};
+use crate::chat_controller::ChatLoopController;
+use crate::dialog::select_assistant;
 use crate::storage::Storage;
 use anyhow::{Context, Result};
 use clap::Args;
-use dialoguer::BasicHistory;
 use lib::{ChatAssistant, OpenAi};
 
 #[derive(Debug, Args)]
@@ -30,11 +30,9 @@ pub(crate) async fn chat(args: ChatArgs) -> Result<()> {
 
     let assistant = get_or_select_assistant(args.assistant_name, assistants)?;
 
-    let (create_prompt, handle_completion) = prepare_chat_loop();
-
     let chat_record = open_ai
-        .chat()
-        .create_loop(&config, &assistant, create_prompt, handle_completion)
+        .chat(ChatLoopController::default())
+        .create_loop(&config, &assistant)
         .await?;
 
     Storage::chat_records()?.save(chat_record)?;
@@ -51,26 +49,14 @@ async fn chat_thread(args: ChatArgs) -> Result<()> {
         .external()
         .context("only external assistants can use threads")?;
 
-    let (create_prompt, handle_completion) = prepare_chat_loop();
-
     let chat_record = open_ai
-        .chat()
-        .create_loop_with_thread(&assistant, create_prompt, handle_completion)
+        .chat(ChatLoopController::default())
+        .create_loop_with_thread(&assistant)
         .await?;
 
     Storage::chat_records()?.save(chat_record)?;
 
     Ok(())
-}
-
-fn prepare_chat_loop() -> (impl FnMut() -> Result<Option<String>>, impl Fn(&str) -> ()) {
-    println!("Enter your prompt below. Leave it blank to exit");
-
-    let mut history = BasicHistory::new().max_entries(8).no_duplicates(true);
-    let create_prompt = move || input_chat_prompt(&mut history);
-    let handle_completion = |completion: &str| println!("{completion}");
-
-    (create_prompt, handle_completion)
 }
 
 fn get_or_select_assistant(
