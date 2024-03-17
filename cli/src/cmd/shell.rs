@@ -23,7 +23,7 @@ pub(crate) async fn shell_cmd(args: ShellArgs) -> Result<()> {
     let assistant = ChatAssistant::LocalAssistant(shell_assistant(shell));
 
     OpenAi::new(&config.api_key())
-        .chat(ExecuteLoopController::new(shell, args.yes))
+        .chat(ExecuteLoopController::new(args.yes))
         .create_loop(&config, &assistant)
         .await?;
 
